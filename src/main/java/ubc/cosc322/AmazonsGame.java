@@ -1,94 +1,63 @@
 package ubc.cosc322;
 
-
 import java.util.ArrayList;
-import java.util.List;
 
-/**
- * Manages the game state and move generation for the Game of the Amazons.
- */
 public class AmazonsGame {
-    private int[][] board = new int[10][10]; // 0=empty, 1=White, 2=Black, 3=Arrow
-    private int currentPlayer; // 0=Black, 1=White
+    private int[] board; // 10x10 board flattened to 100 elements
+    private int currentPlayer; // 0 for Black, 1 for White
 
-    /**
-     * Updates the board state based on server-provided data.
-     */
-    public void updateBoard(ArrayList<Integer> gameS) {
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                board[i][j] = gameS.get(i * 10 + j);
-            }
-        }
-        // Placeholder: Assume White starts; adjust based on game rules or server data
-        currentPlayer = 1;
+    public AmazonsGame() {
+        board = new int[100];
+        currentPlayer = 0; // Black starts
+        initializeBoard();
     }
 
-    /**
-     * Applies a move to the board and switches the current player.
-     */
+    // Initialize the standard starting position for Amazons
+    private void initializeBoard() {
+        // Empty board
+        for (int i = 0; i < 100; i++) {
+            board[i] = 0;
+        }
+        // Black queens (2)
+        board[3] = 2;  // (0, 3)
+        board[6] = 2;  // (0, 6)
+        board[30] = 2; // (3, 0)
+        board[39] = 2; // (3, 9)
+        // White queens (1)
+        board[60] = 1; // (6, 0)
+        board[69] = 1; // (6, 9)
+        board[93] = 1; // (9, 3)
+        board[96] = 1; // (9, 6)
+    }
+
+    // Update board from server data
+    public void updateBoard(ArrayList<Integer> gameState) {
+        if (gameState != null && gameState.size() == 100) {
+            for (int i = 0; i < 100; i++) {
+                board[i] = gameState.get(i);
+            }
+        }
+    }
+
+    // Apply a move to the board
     public void applyMove(int player, Move move) {
-        int rCurr = move.queenCurr[0] - 1; // Convert to 0-based indexing
-        int cCurr = move.queenCurr[1] - 1;
-        int rNext = move.queenNext[0] - 1;
-        int cNext = move.queenNext[1] - 1;
-        int rArrow = move.arrow[0] - 1;
-        int cArrow = move.arrow[1] - 1;
+        int queenValue = (player == 0) ? 2 : 1; // Black = 2, White = 1
+        int currPos = move.queenCurr[0] * 10 + move.queenCurr[1];
+        int nextPos = move.queenNext[0] * 10 + move.queenNext[1];
+        int arrowPos = move.arrow[0] * 10 + move.arrow[1];
 
-        board[rCurr][cCurr] = 0; // Clear current queen position
-        board[rNext][cNext] = player + 1; // 1=White, 2=Black
-        board[rArrow][cArrow] = 3; // Place arrow
-        currentPlayer = 1 - player; // Switch player
+        board[currPos] = 0;           // Clear old queen position
+        board[nextPos] = queenValue;  // Move queen to new position
+        board[arrowPos] = 3;          // Place arrow
+        currentPlayer = 1 - player;   // Switch turns
     }
 
-    /**
-     * Generates all legal moves for the given player.
-     */
-    public List<Move> generateLegalMoves(int player) {
-        List<Move> moves = new ArrayList<>();
-        int amazonValue = player + 1; // 1=White, 2=Black
-        int[][] directions = {
-                {-1, 0}, {1, 0}, {0, -1}, {0, 1}, // Orthogonal
-                {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // Diagonal
-        };
-
-        for (int r = 0; r < 10; r++) {
-            for (int c = 0; c < 10; c++) {
-                if (board[r][c] == amazonValue) {
-                    for (int[] dir : directions) {
-                        int dr = dir[0], dc = dir[1];
-                        int rNew = r + dr, cNew = c + dc;
-                        while (isValid(rNew, cNew) && board[rNew][cNew] == 0) {
-                            int[] queenCurr = {r + 1, c + 1}; // Convert to 1-based indexing
-                            int[] queenNext = {rNew + 1, cNew + 1};
-                            for (int[] arrowDir : directions) {
-                                int ar = rNew + arrowDir[0], ac = cNew + arrowDir[1];
-                                while (isValid(ar, ac) && board[ar][ac] == 0) {
-                                    moves.add(new Move(queenCurr, queenNext, new int[]{ar + 1, ac + 1}));
-                                    ar += arrowDir[0];
-                                    ac += arrowDir[1];
-                                }
-                            }
-                            rNew += dr;
-                            cNew += dc;
-                        }
-                    }
-                }
-            }
-        }
-        return moves;
+    // Get the current board state
+    public int[] getBoard() {
+        return board;
     }
 
-    /**
-     * Checks if a position is within board bounds.
-     */
-    private boolean isValid(int r, int c) {
-        return r >= 0 && r < 10 && c >= 0 && c < 10;
-    }
-
-    /**
-     * Returns the current player.
-     */
+    // Get the current player
     public int getCurrentPlayer() {
         return currentPlayer;
     }

@@ -1,35 +1,60 @@
 package ubc.cosc322;
 
-import java.util.List;
-import java.util.Random;
-
-/**
- * AI player for the Game of the Amazons.
- * Currently selects a random move; can be extended with MCTS or Minimax.
- */
 public class AmazonsAI {
-    private AmazonsGame game;
-    private int myColor;
-    private Random rand = new Random();
+    private AmazonsGame gameState;
+    private int myColor; // 0 for Black, 1 for White
 
-    /**
-     * Constructor initializing the AI with game state and player color.
-     */
-    public AmazonsAI(AmazonsGame game, int myColor) {
-        this.game = game;
+    public AmazonsAI(AmazonsGame gameState, int myColor) {
+        this.gameState = gameState;
         this.myColor = myColor;
     }
 
-    /**
-     * Selects a move for the AI player.
-     */
     public Move selectMove() {
-        List<Move> moves = game.generateLegalMoves(myColor);
-        if (moves.isEmpty()) {
-            return null; // No legal moves available
+        int queenValue = (myColor == 0) ? 2 : 1; // Black queens = 2, White queens = 1
+        int[] board = gameState.getBoard();
+
+        // Find the first queen of my color
+        int queenPos = -1;
+        for (int i = 0; i < board.length; i++) {
+            if (board[i] == queenValue) {
+                queenPos = i;
+                break;
+            }
         }
-        return moves.get(rand.nextInt(moves.size())); // Random move selection
+
+        if (queenPos == -1) return null; // No queen found
+
+        int row = queenPos / 10;
+        int col = queenPos % 10;
+        int[] queenCurr = {row, col};
+
+        // Possible directions: right, left, up, down (simplified for now)
+        int[][] directions = {{0, 1}, {0, -1}, {-1, 0}, {1, 0}};
+        int[] queenNext = null;
+        int[] arrow = null;
+
+        // Try each direction for queen move
+        for (int[] dir : directions) {
+            int newRow = row + dir[0];
+            int newCol = col + dir[1];
+            if (isValidPosition(newRow, newCol) && board[newRow * 10 + newCol] == 0) {
+                queenNext = new int[]{newRow, newCol};
+                // Try an arrow shot in the same direction from the new position
+                int arrowRow = newRow + dir[0];
+                int arrowCol = newCol + dir[1];
+                if (isValidPosition(arrowRow, arrowCol) && board[arrowRow * 10 + arrowCol] == 0) {
+                    arrow = new int[]{arrowRow, arrowCol};
+                    break; // Found a valid move, stop searching
+                }
+            }
+        }
+
+        if (queenNext == null || arrow == null) return null; // No valid move found
+
+        return new Move(queenCurr, queenNext, arrow);
     }
 
-    // Placeholder for future advanced AI implementations (e.g., MCTS, Minimax)
+    private boolean isValidPosition(int row, int col) {
+        return row >= 0 && row < 10 && col >= 0 && col < 10;
+    }
 }
