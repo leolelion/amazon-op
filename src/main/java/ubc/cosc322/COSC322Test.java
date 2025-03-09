@@ -14,7 +14,7 @@ import ygraph.ai.smartfox.games.amazons.AmazonsGameMessage;
 
 /**
  * An example illustrating how to implement a GamePlayer
- * @author Yong Gao (yong.gao@ubc.ca)
+ * @author Yong Gao (yong.gao@ubc.ca).
  * Jan 5, 2021
  *
  */
