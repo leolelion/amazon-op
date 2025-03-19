@@ -5,17 +5,13 @@ import java.util.ArrayList;
 public class Brain {
     private final int BOARD_SIZE = 10;
 
-    // Ensure that playerColor is 1 (black) for the AI.
-    public Move getBestMove(ArrayList<Integer> gameState, int playerColor) {
-        if (playerColor != 1) {
-            System.err.println("Error: AI must move a black queen (piece value 1).");
-            return null;
-        }
-        System.out.println("Finding best move for Black Queen...");
+    // Generate best move for the given board and AI color.
+    public Move getBestMove(ArrayList<Integer> gameState, int aiColor) {
+        System.out.println("Brain analyzing board for AI color " + aiColor + "...");
         if (shouldUseMCTS(gameState)) {
-            return new MCTS().findBestMove(gameState, playerColor);
+            return new MCTS().findBestMove(gameState, aiColor);
         } else {
-            return new Minimax().findBestMove(gameState, playerColor);
+            return new Minimax().findBestMove(gameState, aiColor);
         }
     }
 

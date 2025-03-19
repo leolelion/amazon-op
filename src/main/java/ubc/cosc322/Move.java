@@ -13,7 +13,7 @@ public class Move {
         this.arrow = arrow;
     }
 
-    // For simulation during search (no output)
+    // For simulations (no output)
     public void simulateMove(ArrayList<Integer> gameState, int pieceValue) {
         int startX = queenStart.get(0), startY = queenStart.get(1);
         int endX = queenEnd.get(0), endY = queenEnd.get(1);
@@ -23,18 +23,25 @@ public class Move {
         gameState.set(arrowX * 11 + arrowY, 3);
     }
 
-    // For the AI’s actual move (always moves a queen)
-    public void applyMoveForAI(ArrayList<Integer> gameState) {
+    // Apply the real move for the AI using its assigned color.
+    public void applyMoveForAI(ArrayList<Integer> gameState, int aiColor) {
         int startX = queenStart.get(0), startY = queenStart.get(1);
         int endX = queenEnd.get(0), endY = queenEnd.get(1);
         int arrowX = arrow.get(0), arrowY = arrow.get(1);
         gameState.set(startX * 11 + startY, 0);
-        gameState.set(endX * 11 + endY, 1);
+        gameState.set(endX * 11 + endY, aiColor);
         gameState.set(arrowX * 11 + arrowY, 3);
-        System.out.println("LeBronAI moved: Queen " + queenStart + " -> " + queenEnd + ", Arrow at " + arrow);
     }
 
-    public ArrayList<Integer> getQueenStart() { return queenStart; }
-    public ArrayList<Integer> getQueenEnd() { return queenEnd; }
-    public ArrayList<Integer> getArrow() { return arrow; }
+    public ArrayList<Integer> getQueenStart() {
+        return queenStart;
+    }
+
+    public ArrayList<Integer> getQueenEnd() {
+        return queenEnd;
+    }
+
+    public ArrayList<Integer> getArrow() {
+        return arrow;
+    }
 }
