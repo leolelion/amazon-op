@@ -14,13 +14,10 @@ public class MCTS {
         Node root = new Node(null, new ArrayList<>(gameState), null, playerColor);
         for (int i = 0; i < ITERATIONS; i++) {
             Node selected = select(root);
-            if (!isTerminal(selected)) {
-                expand(selected);
-            }
+            if (!isTerminal(selected)) expand(selected);
             Node toSimulate = selected;
-            if (!selected.children.isEmpty()) {
+            if (!selected.children.isEmpty())
                 toSimulate = selected.children.get(random.nextInt(selected.children.size()));
-            }
             int simulationResult = simulate(toSimulate, playerColor);
             backpropagate(toSimulate, simulationResult);
         }
@@ -60,11 +57,10 @@ public class MCTS {
 
     private Node select(Node node) {
         while (!node.children.isEmpty()) {
-            if (!node.isFullyExpanded()) {
+            if (!node.isFullyExpanded())
                 return node;
-            } else {
+            else
                 node = bestUCT(node);
-            }
         }
         return node;
     }
@@ -97,7 +93,7 @@ public class MCTS {
             }
             if (!alreadyExpanded) {
                 ArrayList<Integer> newGameState = new ArrayList<>(node.gameState);
-                move.applyMove(newGameState, "Simulation");
+                move.simulateMove(newGameState, node.playerColor);
                 Node child = new Node(node, newGameState, move, node.playerColor);
                 node.children.add(child);
                 break;
@@ -113,7 +109,7 @@ public class MCTS {
             List<Move> moves = generateAllValidMoves(simulationState, currentPlayer);
             if (moves.isEmpty()) break;
             Move randomMove = moves.get(random.nextInt(moves.size()));
-            randomMove.applyMove(simulationState, "Simulation");
+            randomMove.simulateMove(simulationState, currentPlayer);
             currentPlayer = (currentPlayer == 1) ? 2 : 1;
         }
         return new Minimax().evaluateBoard(simulationState, playerColor);
