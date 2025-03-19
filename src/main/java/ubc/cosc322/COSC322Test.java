@@ -1,5 +1,4 @@
 package ubc.cosc322;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,14 +16,10 @@ public class COSC322Test extends GamePlayer {
     private String userName = null;
     private String passwd = null;
     private ArrayList<Integer> currentGameState = null;
-
-    private int aiColor = 1;
     public Brain brain = new Brain();
-    private boolean opponentMoved = false; //
 
     public static void main(String[] args) {
         COSC322Test player = new COSC322Test("LeBronAI", "cosc322");
-
         if (player.getGameGUI() == null) {
             player.Go();
         } else {
@@ -42,7 +37,6 @@ public class COSC322Test extends GamePlayer {
     @Override
     public void onLogin() {
         System.out.println("Login successful!");
-
         List<Room> roomList = gameClient.getRoomList();
         if (!roomList.isEmpty()) {
             gameClient.joinRoom(roomList.get(0).getName());
@@ -57,14 +51,18 @@ public class COSC322Test extends GamePlayer {
 
     @Override
     public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
+        System.out.println("Received message: " + messageType);
+        System.out.println("Message Details: " + msgDetails);
+
         switch (messageType) {
             case GameMessage.GAME_STATE_BOARD:
                 updateGameState(msgDetails);
-                break; // AI waits for opponent to move first
+                playMove();
+                break;
 
             case GameMessage.GAME_ACTION_MOVE:
                 processOpponentMove(msgDetails);
-                playMove(); //
+                playMove();
                 break;
         }
         return true;
@@ -72,7 +70,7 @@ public class COSC322Test extends GamePlayer {
 
     private void updateGameState(Map<String, Object> msgDetails) {
         currentGameState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
-        if (currentGameState == null || currentGameState.size() < 100) {
+        if (currentGameState == null || currentGameState.size() < 121) {
             System.err.println("Error: Invalid game board state received.");
             return;
         }
@@ -89,43 +87,53 @@ public class COSC322Test extends GamePlayer {
         ArrayList<Integer> queenPosNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
         ArrayList<Integer> arrowPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
 
-        if (queenPosCurr == null || queenPosNext == null || arrowPos == null) {
-            System.err.println("Error: Missing opponent move data.");
-            return;
-        }
+        Move move = new Move(queenPosCurr, queenPosNext, arrowPos, currentGameState);
+        move.applyMove(currentGameState, "Opponent");
 
         System.out.println("Opponent moved: Queen " + queenPosCurr + " -> " + queenPosNext + ", Arrow at " + arrowPos);
 
-        Move move = new Move(queenPosCurr, queenPosNext, arrowPos, currentGameState);
-        move.processOpponentMove(currentGameState);
-
         if (gamegui != null) {
             gamegui.updateGameState(queenPosCurr, queenPosNext, arrowPos);
+            gamegui.repaint();
         }
 
-        opponentMoved = true; //
+        printBoard(currentGameState);
     }
 
     private void playMove() {
-        if (!opponentMoved) {
-            System.out.println("Waiting for opponent to move...");
-            return;
-        }
+        Move bestMove = brain.getBestMove(currentGameState, 1);
+        if (bestMove != null) {
+            bestMove.applyMove(currentGameState, "LeBronAI");
 
-        System.out.println("LeBronAI is selecting a move...");
-        Move bestMove = brain.getBestMove(currentGameState, aiColor);
+            System.out.println("LeBronAI moved: Queen " + bestMove.getQueenStart() + " -> " + bestMove.getQueenEnd() + ", Arrow at " + bestMove.getArrow());
 
-        if (bestMove != null && bestMove.isValidMove()) {
+            if (gamegui != null) {
+                gamegui.updateGameState(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
+                gamegui.repaint();
+            }
+
+            printBoard(currentGameState);
             sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
         } else {
-            System.err.println("AI failed to generate a move.");
+            System.err.println("LeBronAI failed to generate a valid move.");
         }
+    }
+
+    private void printBoard(ArrayList<Integer> gameState) {
+        System.out.println("------ Updated Game Board ------");
+        for (int i = 1; i <= 10; i++) {
+            for (int j = 1; j <= 10; j++) {
+                System.out.print(gameState.get(i * 11 + j) + " ");
+            }
+            System.out.println();
+        }
+        System.out.println("--------------------------------");
     }
 
     public void sendMoveMessage(ArrayList<Integer> queenStart, ArrayList<Integer> queenEnd, ArrayList<Integer> arrow) {
         if (gameClient != null) {
             gameClient.sendMoveMessage(queenStart, queenEnd, arrow);
-            System.out.println("Move sent by LeBronAI: Queen from " + queenStart + " to " + queenEnd + ", Arrow at " + arrow);
+            System.out.println("Move sent: Queen from " + queenStart + " to " + queenEnd + ", Arrow at " + arrow);
         }
     }
 
