@@ -1,28 +1,61 @@
 package ubc.cosc322;
 
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.List;
+
 public class Minimax {
-    private static final int MAX_DEPTH = 3;
+    private final Random random = new Random();
 
-    public Move findBestMove(GameState gameState) {
-        int bestValue = Integer.MIN_VALUE;
-        Move bestMove = null;
+    public Move findBestMove(ArrayList<Integer> gameState, int playerColor) {
+        System.out.println("Minimax analyzing board...");
 
-        for (Move move : gameState.getLegalMoves()) {
-            // ✅ Use the copy constructor
-            GameState newState = new GameState(gameState);
-            newState.applyMove(move.queenStart, move.queenEnd, move.arrow);
-            int moveValue = minimax(newState, MAX_DEPTH, Integer.MIN_VALUE, Integer.MAX_VALUE, false);
-
-            if (moveValue > bestValue) {
-                bestValue = moveValue;
-                bestMove = move;
+        ArrayList<int[]> blackQueens = new ArrayList<>();
+        for (int i = 0; i < gameState.size(); i++) {
+            if (gameState.get(i) == playerColor) { // 1 = Black queen
+                int row = i / 10;
+                int col = i % 10;
+                blackQueens.add(new int[]{row, col});
             }
         }
-        return bestMove;
+
+        if (blackQueens.isEmpty()) {
+            System.err.println("Error: No Black queens found on board.");
+            return null;
+        }
+
+        ArrayList<Move> possibleMoves = new ArrayList<>();
+
+        for (int[] queen : blackQueens) {
+            int row = queen[0];
+            int col = queen[1];
+
+            for (int newRow = row - 1; newRow <= row + 1; newRow++) {
+                for (int newCol = col - 1; newCol <= col + 1; newCol++) {
+                    if (isValidMove(row, col, newRow, newCol, gameState)) {
+                        ArrayList<Integer> queenStart = new ArrayList<>(List.of(row, col));
+                        ArrayList<Integer> queenEnd = new ArrayList<>(List.of(newRow, newCol));
+                        ArrayList<Integer> arrowPos = new ArrayList<>(List.of(newRow, newCol));
+
+                        possibleMoves.add(new Move(queenStart, queenEnd, arrowPos, gameState));
+                    }
+                }
+            }
+        }
+
+        if (possibleMoves.isEmpty()) {
+            System.err.println("Minimax failed to find a valid move.");
+            return null;
+        }
+
+        Move chosenMove = possibleMoves.get(random.nextInt(possibleMoves.size()));
+        System.out.println("LeBronAI is moving from " + chosenMove.getQueenStart() + " to " + chosenMove.getQueenEnd());
+        return chosenMove;
     }
 
-    private int minimax(GameState state, int depth, int alpha, int beta, boolean isMax) {
-        if (depth == 0) return state.evaluate();
-        return isMax ? alpha : beta;
+    private boolean isValidMove(int startRow, int startCol, int endRow, int endCol, ArrayList<Integer> gameState) {
+        if (endRow < 0 || endRow >= 10 || endCol < 0 || endCol >= 10) return false;
+        int endIndex = endRow * 10 + endCol;
+        return gameState.get(endIndex) == 0;
     }
 }
