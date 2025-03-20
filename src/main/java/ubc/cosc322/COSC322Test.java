@@ -1,10 +1,8 @@
-
 package ubc.cosc322;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import sfs2x.client.entities.Room;
 import ygraph.ai.smartfox.games.BaseGameGUI;
 import ygraph.ai.smartfox.games.GameClient;
@@ -12,141 +10,184 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 import ygraph.ai.smartfox.games.amazons.AmazonsGameMessage;
 
-/**
- * An example illustrating how to implement a GamePlayer
- * @author Yong Gao (yong.gao@ubc.ca).
- * Jan 5, 2021
- *
- */
-public class COSC322Test extends GamePlayer{
 
-    private GameClient gameClient = null; 
+public class COSC322Test extends GamePlayer {
+
+    private GameClient gameClient = null;
     private BaseGameGUI gamegui = null;
-	
     private String userName = null;
     private String passwd = null;
- 
-	
-    /**
-     * The main method
-     * @param args for name and passwd (current, any string would work)
-     */
-    public static void main(String[] args) {				 
-    	COSC322Test player = new COSC322Test("cosc322", "cosc322");
-    	
-    	if(player.getGameGUI() == null) {
-    		player.Go();
-    	}
-    	else {
-    		BaseGameGUI.sys_setup();
-            java.awt.EventQueue.invokeLater(new Runnable() {
-                public void run() {
-                	player.Go();
-                }
-            });
-    	}
+    private ArrayList<Integer> currentGameState = null;
+    public Brain brain = new Brain();
+
+    // aiColor: 1 for black, 2 for white.
+    private int aiColor;
+    private boolean gameStarted = false;
+
+    public static void main(String[] args) {
+        // Set the third parameter to 1 for black or 2 for white.
+        COSC322Test player = new COSC322Test("babar", "cosc322", 1);
+        if (player.getGameGUI() == null) {
+            player.Go();
+        } else {
+            BaseGameGUI.sys_setup();
+            java.awt.EventQueue.invokeLater(() -> player.Go());
+        }
     }
-	
-    /**
-     * Any name and passwd 
-     * @param userName
-      * @param passwd
-     */
-    public COSC322Test(String userName, String passwd) {
-    	this.userName = userName;
-    	this.passwd = passwd;
 
-
-    	//To make a GUI-based player, create an instance of BaseGameGUI
-    	//and implement the method getGameGUI() accordingly
-    	this.gamegui = new BaseGameGUI(this);
+    public COSC322Test(String userName, String passwd, int aiColor) {
+        this.userName = userName;
+        this.passwd = passwd;
+        this.aiColor = aiColor;
+        this.gamegui = new BaseGameGUI(this);
     }
- 
-
 
     @Override
     public void onLogin() {
-
-    	// System.out.println("Congratualations!!! "
-    	// 		+ "I am called because the server indicated that the login is successfully");
-    	// System.out.println("The next step is to find a room and join it: "
-    	// 		+ "the gameClient instance created in my constructor knows how!");
-
-		// List<Room> roomList = gameClient.getRoomList();
-
-		// System.out.println("The available room/rooms is/are:");
-		// for(Room roomName : roomList){
-		// 	System.out.println(" - " + roomName.getName());
-		// };
-
-		// gameClient.joinRoom(roomList.get(0).getName());
-
-		userName = gameClient.getUserName();
-
-		if(gamegui != null) {
-			gamegui.setRoomInformation(gameClient.getRoomList());
-		}
+        System.out.println("Login successful!");
+        List<Room> roomList = gameClient.getRoomList();
+        if (!roomList.isEmpty()) {
+            gameClient.joinRoom(roomList.get(0).getName());
+            userName = gameClient.getUserName();
+            if (gamegui != null) {
+                gamegui.setRoomInformation(gameClient.getRoomList());
+            }
+        } else {
+            System.err.println("No available game rooms to join.");
+        }
+        gameStarted = false;
     }
 
-	@Override
-	public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
-		switch (messageType) {
-			case GameMessage.GAME_STATE_BOARD:
-				ArrayList<Integer> gameS = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
-				if (gameS != null && gamegui != null) {
-					gamegui.setGameState(gameS);
-				} else {
-					System.err.println("Error: GAME_STATE_BOARD message missing required data or gamegui is null.");
-				}
-				break;
+    @Override
+    public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
+        System.out.println("Received message: " + messageType);
+        System.out.println("Message Details: " + msgDetails);
 
-			case GameMessage.GAME_ACTION_MOVE:
-				ArrayList<Integer> queenPosCurr = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
-				ArrayList<Integer> queenPosNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
-				ArrayList<Integer> arrowPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
+        switch (messageType) {
+            case GameMessage.GAME_ACTION_START:
+                System.out.println("Game started.");
+                gameStarted = true;
+                // If playing as white, make the first move.
+                if (aiColor == 2) {
+                    playMove();
+                }
+                break;
+            case GameMessage.GAME_STATE_BOARD:
+                updateGameState(msgDetails);
+                // For black, move after the opponent; for white, a move may have already been made.
+                if (gameStarted && aiColor == 1) {
+                    playMove();
+                }
+                break;
+            case GameMessage.GAME_ACTION_MOVE:
+                processOpponentMove(msgDetails);
+                if (gameStarted) {
+                    playMove();
+                }
+                break;
+        }
+        return true;
+    }
 
-				if (queenPosCurr != null && queenPosNext != null && arrowPos != null) {
-					if (gamegui != null) {
-						gamegui.updateGameState(queenPosCurr, queenPosNext, arrowPos);
-					}
-					// calculate move
-				} else {
-					System.err.println("Error: GAME_ACTION_MOVE message missing required data.");
-				}
-            	break;
+    private void updateGameState(Map<String, Object> msgDetails) {
+        currentGameState = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.GAME_STATE);
+        if (currentGameState == null || currentGameState.size() < 121) {
+            System.err.println("Error: Invalid game board state received.");
+            return;
+        }
+        if (gamegui != null) {
+            gamegui.setGameState(currentGameState);
+        }
+        System.out.println("Updated game state successfully.");
+    }
 
-			default:
-				System.out.println("Message type: " + messageType);
-				System.out.println("Message: " + msgDetails);
-				break;
-		}
-				return true;
-	}
+    // Process opponent move using the opponent's color (opposite of aiColor).
+    private void processOpponentMove(Map<String, Object> msgDetails) {
+        ArrayList<Integer> queenPosCurr = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
+        ArrayList<Integer> queenPosNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
+        ArrayList<Integer> arrowPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
 
+        int opponentColor = (aiColor == 1) ? 2 : 1;
+        int startX = queenPosCurr.get(0);
+        int startY = queenPosCurr.get(1);
+        int endX = queenPosNext.get(0);
+        int endY = queenPosNext.get(1);
+        int arrowX = arrowPos.get(0);
+        int arrowY = arrowPos.get(1);
 
+        currentGameState.set(startX * 11 + startY, 0);
+        currentGameState.set(endX * 11 + endY, opponentColor);
+        currentGameState.set(arrowX * 11 + arrowY, 3);
 
-	@Override
+        System.out.println("Opponent moved: Queen " + queenPosCurr + " -> " + queenPosNext + ", Arrow at " + arrowPos);
+        if (gamegui != null) {
+            gamegui.updateGameState(queenPosCurr, queenPosNext, arrowPos);
+            gamegui.repaint();
+        }
+        printBoard(currentGameState);
+    }
+
+    // Delegate turn processing to Brain and then print game status.
+    private void playMove() {
+        if (!gameStarted) {
+            System.out.println("Game has not started yet. Waiting for start signal.");
+            return;
+        }
+        Move bestMove = brain.processTurn(currentGameState, aiColor);
+        if (gamegui != null && bestMove != null) {
+            gamegui.updateGameState(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
+            gamegui.repaint();
+        }
+        printBoard(currentGameState);
+        if (bestMove != null) {
+            sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
+        }
+        // Print game status only if non-empty.
+        String status = brain.getGameStatus(currentGameState, aiColor);
+        if (!status.isEmpty()) {
+            System.out.println(status);
+        }
+    }
+
+    private void printBoard(ArrayList<Integer> gameState) {
+        System.out.println("------ Updated Game Board ------");
+        for (int i = 1; i <= 10; i++) {
+            for (int j = 1; j <= 10; j++) {
+                System.out.print(gameState.get(i * 11 + j) + " ");
+            }
+            System.out.println();
+        }
+        System.out.println("--------------------------------");
+    }
+
+    public void sendMoveMessage(ArrayList<Integer> queenStart, ArrayList<Integer> queenEnd, ArrayList<Integer> arrow) {
+        if (queenStart == null || queenEnd == null || arrow == null) {
+            System.err.println("Cannot send move message: one or more move parameters are null.");
+            return;
+        }
+        if (gameClient != null) {
+            gameClient.sendMoveMessage(queenStart, queenEnd, arrow);
+            System.out.println("Move sent: Queen from " + queenStart + " to " + queenEnd + ", Arrow at " + arrow);
+        }
+    }
+
+    @Override
     public String userName() {
-    	return userName;
+        return this.userName;
     }
 
-	@Override
-	public GameClient getGameClient() {
-		// TODO Auto-generated method stub
-		return this.gameClient;
-	}
+    @Override
+    public GameClient getGameClient() {
+        return this.gameClient;
+    }
 
-	@Override
-	public BaseGameGUI getGameGUI() {
-		// TODO Auto-generated method stub
-		return this.gamegui;
-	}
+    @Override
+    public BaseGameGUI getGameGUI() {
+        return this.gamegui;
+    }
 
-	@Override
-	public void connect() {
-		// TODO Auto-generated method stub
-    	gameClient = new GameClient(userName, passwd, this);			
-	}
-
- 
-}//end of class
+    @Override
+    public void connect() {
+        gameClient = new GameClient(userName, passwd, this);
+    }
+}
