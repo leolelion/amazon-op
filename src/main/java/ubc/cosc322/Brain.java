@@ -5,11 +5,6 @@ import java.util.ArrayList;
 public class Brain {
     private final int BOARD_SIZE = 10;
 
-    // Processes the AI's turn:
-    // 1. Checks if any AI queen can move (loss condition).
-    // 2. Generates and applies the best move.
-    // 3. Returns the best move so that COSC322Test can update the GUI.
-    //    (Also prints a win message if the opponent has no moves.)
     public Move processTurn(ArrayList<Integer> gameState, int aiColor) {
         if (!hasValidMoves(gameState, aiColor)) {
             System.out.println("All your queens are blocked. LeBronAI has lost.");
@@ -32,7 +27,6 @@ public class Brain {
         return bestMove;
     }
 
-    // Returns the best move using either MCTS or Minimax.
     public Move getBestMove(ArrayList<Integer> gameState, int aiColor) {
         System.out.println("Brain analyzing board for AI color " + aiColor + "...");
         if (shouldUseMCTS(gameState)) {
@@ -44,7 +38,6 @@ public class Brain {
         }
     }
 
-    // Decide which algorithm to use based on the number of empty cells in the 10x10 board.
     private boolean shouldUseMCTS(ArrayList<Integer> gameState) {
         int emptySpaces = 0;
         for (int i = 1; i <= BOARD_SIZE; i++) {
@@ -58,8 +51,6 @@ public class Brain {
         return emptySpaces > 50;
     }
 
-    // Returns a status message only if the game is over.
-    // Returns an empty string if the game is still ongoing.
     public String getGameStatus(ArrayList<Integer> gameState, int aiColor) {
         if (!hasValidMoves(gameState, aiColor)) {
             return "Game Over: All your queens are blocked. LeBronAI has lost.";
@@ -69,7 +60,6 @@ public class Brain {
         return "";
     }
 
-    // Checks if any queen of the specified color has at least one valid move.
     public boolean hasValidMoves(ArrayList<Integer> gameState, int playerColor) {
         for (int i = 1; i <= BOARD_SIZE; i++) {
             for (int j = 1; j <= BOARD_SIZE; j++) {
@@ -82,7 +72,6 @@ public class Brain {
         return false;
     }
 
-    // Checks if a queen at (x,y) can move in any direction.
     private boolean canMovePiece(ArrayList<Integer> gameState, int x, int y) {
         int[] directions = {-1, 0, 1};
         for (int dx : directions) {
@@ -103,7 +92,7 @@ public class Brain {
         return x >= 1 && x <= BOARD_SIZE && y >= 1 && y <= BOARD_SIZE;
     }
 
-    // Checks if the opponent (the opposite color) has any valid moves.
+
     public boolean opponentHasValidMoves(ArrayList<Integer> gameState, int aiColor) {
         int opponentColor = (aiColor == 1) ? 2 : 1;
         return hasValidMoves(gameState, opponentColor);
