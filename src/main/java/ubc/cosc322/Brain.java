@@ -5,30 +5,31 @@ import java.util.ArrayList;
 public class Brain {
     private final int BOARD_SIZE = 10;
 
-    // Processes the turn: checks for valid moves, generates the best move, applies it,
-    // and prints win/loss messages.
+    // Process the AI's turn: checks if the AI can move, generates and applies the best move,
+    // and then returns the game status.
     public Move processTurn(ArrayList<Integer> gameState, int aiColor) {
         if (!hasValidMoves(gameState, aiColor)) {
-            System.out.println("No valid moves available for LeBronAI. LeBronAI has lost.");
+            System.out.println("All your queens are blocked. LeBronAI has lost.");
             return null;
         }
         Move bestMove = getBestMove(gameState, aiColor);
         if (bestMove == null) {
-            if (!hasValidMoves(gameState, aiColor)) {
-                System.out.println("No valid moves available for LeBronAI. LeBronAI has lost.");
-            }
+            System.out.println("No valid moves available for LeBronAI. LeBronAI has lost.");
             return null;
         }
         bestMove.applyMoveForAI(gameState, aiColor);
         String colorName = (aiColor == 1) ? "Black" : "White";
-        System.out.println("LeBronAI (" + colorName + ") moved: Queen " + bestMove.getQueenStart() +
-                " -> " + bestMove.getQueenEnd() + ", Arrow at " + bestMove.getArrow());
+        System.out.println("LeBronAI (" + colorName + ") moved: Queen "
+                + bestMove.getQueenStart() + " -> "
+                + bestMove.getQueenEnd() + ", Arrow at "
+                + bestMove.getArrow());
         if (!opponentHasValidMoves(gameState, aiColor)) {
             System.out.println("No valid moves left for the opponent. LeBronAI wins!");
         }
         return bestMove;
     }
 
+    // Chooses the best move using either MCTS or Minimax.
     public Move getBestMove(ArrayList<Integer> gameState, int aiColor) {
         System.out.println("Brain analyzing board for AI color " + aiColor + "...");
         if (shouldUseMCTS(gameState)) {
@@ -40,6 +41,7 @@ public class Brain {
         }
     }
 
+    // Determines which algorithm to use based on the number of empty cells.
     private boolean shouldUseMCTS(ArrayList<Integer> gameState) {
         int emptySpaces = 0;
         for (int i = 1; i <= BOARD_SIZE; i++) {
@@ -50,10 +52,21 @@ public class Brain {
                 }
             }
         }
-        // Use MCTS if there are more than 50 empty cells; otherwise, use Minimax.
+        // Use MCTS if more than 50 empty cells; otherwise, use Minimax.
         return emptySpaces > 50;
     }
 
+    // Returns a status message based on the current game state.
+    public String getGameStatus(ArrayList<Integer> gameState, int aiColor) {
+        if (!hasValidMoves(gameState, aiColor)) {
+            return "All your queens are blocked. LeBronAI has lost.";
+        } else if (!opponentHasValidMoves(gameState, aiColor)) {
+            return "No valid moves left for the opponent. LeBronAI wins!";
+        }
+        return "Game continues.";
+    }
+
+    // Checks if any queen of the specified color has a valid move.
     public boolean hasValidMoves(ArrayList<Integer> gameState, int playerColor) {
         for (int i = 1; i <= BOARD_SIZE; i++) {
             for (int j = 1; j <= BOARD_SIZE; j++) {
@@ -66,6 +79,7 @@ public class Brain {
         return false;
     }
 
+    // Checks if a queen at (x,y) can move in at least one direction.
     private boolean canMovePiece(ArrayList<Integer> gameState, int x, int y) {
         int[] directions = {-1, 0, 1};
         for (int dx : directions) {
@@ -81,10 +95,12 @@ public class Brain {
         return false;
     }
 
+    // Check board boundaries.
     private boolean isInsideBoard(int x, int y) {
         return x >= 1 && x <= BOARD_SIZE && y >= 1 && y <= BOARD_SIZE;
     }
 
+    // Checks if the opponent (the opposite color) has any valid moves.
     public boolean opponentHasValidMoves(ArrayList<Integer> gameState, int aiColor) {
         int opponentColor = (aiColor == 1) ? 2 : 1;
         return hasValidMoves(gameState, opponentColor);

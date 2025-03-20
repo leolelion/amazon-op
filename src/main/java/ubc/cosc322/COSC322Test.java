@@ -126,22 +126,23 @@ public class COSC322Test extends GamePlayer {
         printBoard(currentGameState);
     }
 
-    // Delegate turn processing to Brain.
+    // Delegate turn processing to Brain and print game status.
     private void playMove() {
         if (!gameStarted) {
             System.out.println("Game has not started yet. Waiting for start signal.");
             return;
         }
         Move bestMove = brain.processTurn(currentGameState, aiColor);
-        if (bestMove != null && gamegui != null) {
+        if (gamegui != null && bestMove != null) {
             gamegui.updateGameState(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
             gamegui.repaint();
         }
         printBoard(currentGameState);
-        // Only send move message if bestMove is non-null.
         if (bestMove != null) {
             sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
         }
+        // After the move, print the overall game status.
+        System.out.println(brain.getGameStatus(currentGameState, aiColor));
     }
 
     private void printBoard(ArrayList<Integer> gameState) {
@@ -156,7 +157,6 @@ public class COSC322Test extends GamePlayer {
     }
 
     public void sendMoveMessage(ArrayList<Integer> queenStart, ArrayList<Integer> queenEnd, ArrayList<Integer> arrow) {
-        // Check if any of the arrays are null. If so, do not send the message.
         if (queenStart == null || queenEnd == null || arrow == null) {
             System.err.println("Cannot send move message: one or more move parameters are null.");
             return;
