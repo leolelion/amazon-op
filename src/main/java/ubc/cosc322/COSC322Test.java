@@ -25,8 +25,7 @@ public class COSC322Test extends GamePlayer {
     private boolean gameStarted = false;
 
     public static void main(String[] args) {
-        // Set the third parameter to 1 for black or 2 for white.
-        COSC322Test player = new COSC322Test("babar", "cosc322", 1);
+        COSC322Test player = new COSC322Test("LebronAI", "cosc322", 1);
         if (player.getGameGUI() == null) {
             player.Go();
         } else {
@@ -67,14 +66,12 @@ public class COSC322Test extends GamePlayer {
             case GameMessage.GAME_ACTION_START:
                 System.out.println("Game started.");
                 gameStarted = true;
-                // If playing as white, make the first move.
                 if (aiColor == 2) {
                     playMove();
                 }
                 break;
             case GameMessage.GAME_STATE_BOARD:
                 updateGameState(msgDetails);
-                // For black, move after the opponent; for white, a move may have already been made.
                 if (gameStarted && aiColor == 1) {
                     playMove();
                 }
@@ -101,7 +98,6 @@ public class COSC322Test extends GamePlayer {
         System.out.println("Updated game state successfully.");
     }
 
-    // Process opponent move using the opponent's color (opposite of aiColor).
     private void processOpponentMove(Map<String, Object> msgDetails) {
         ArrayList<Integer> queenPosCurr = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
         ArrayList<Integer> queenPosNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
@@ -127,7 +123,6 @@ public class COSC322Test extends GamePlayer {
         printBoard(currentGameState);
     }
 
-    // Delegate turn processing to Brain and then print game status.
     private void playMove() {
         if (!gameStarted) {
             System.out.println("Game has not started yet. Waiting for start signal.");
@@ -142,7 +137,7 @@ public class COSC322Test extends GamePlayer {
         if (bestMove != null) {
             sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
         }
-        // Print game status only if non-empty.
+
         String status = brain.getGameStatus(currentGameState, aiColor);
         if (!status.isEmpty()) {
             System.out.println(status);
