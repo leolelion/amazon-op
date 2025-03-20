@@ -45,7 +45,7 @@ public class Minimax {
     public Move findBestMove(ArrayList<Integer> gameState, int playerColor) {
         List<Move> possibleMoves = generateAllValidMoves(gameState, playerColor);
         if (possibleMoves.isEmpty()) {
-            System.err.println("No valid moves found for Minimax.");
+            // Instead of printing an error message, simply return null.
             return null;
         }
         Move bestMove = null;
@@ -60,7 +60,7 @@ public class Minimax {
             }
         }
         if (bestMove == null) {
-            System.err.println("Minimax failed to generate a move.");
+            return null;
         } else {
             System.out.println("Best move: " + bestMove.getQueenStart() + " -> " +
                     bestMove.getQueenEnd() + ", Arrow at " + bestMove.getArrow());

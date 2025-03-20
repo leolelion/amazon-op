@@ -24,7 +24,7 @@ public class COSC322Test extends GamePlayer {
     private boolean gameStarted = false;
 
     public static void main(String[] args) {
-        // Change the third parameter to 1 for black or 2 for white.
+        // Set the third parameter to 1 for black or 2 for white.
         COSC322Test player = new COSC322Test("LeBronAI", "cosc322", 2);
         if (player.getGameGUI() == null) {
             player.Go();
@@ -73,7 +73,7 @@ public class COSC322Test extends GamePlayer {
                 break;
             case GameMessage.GAME_STATE_BOARD:
                 updateGameState(msgDetails);
-                // For black, wait for opponent move; for white, a move may have already been made.
+                // For black, move after the opponent; for white, a move may have already been made.
                 if (gameStarted && aiColor == 1) {
                     playMove();
                 }
@@ -100,7 +100,7 @@ public class COSC322Test extends GamePlayer {
         System.out.println("Updated game state successfully.");
     }
 
-    // Process opponent move; update board using the opponent's color (opposite of aiColor).
+    // Process opponent move using the opponent's color (opposite of aiColor).
     private void processOpponentMove(Map<String, Object> msgDetails) {
         ArrayList<Integer> queenPosCurr = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
         ArrayList<Integer> queenPosNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
@@ -112,8 +112,7 @@ public class COSC322Test extends GamePlayer {
         int endX = queenPosNext.get(0);
         int endY = queenPosNext.get(1);
         int arrowX = arrowPos.get(0);
-        int arrowY = arrowPos.get(0); // Mistakenly using arrowX? Let's correct: arrowY should be arrowPos.get(1)
-        arrowY = arrowPos.get(1);
+        int arrowY = arrowPos.get(1);
 
         currentGameState.set(startX * 11 + startY, 0);
         currentGameState.set(endX * 11 + endY, opponentColor);
@@ -127,62 +126,22 @@ public class COSC322Test extends GamePlayer {
         printBoard(currentGameState);
     }
 
-    // Generate and apply AI move using aiColor.
+    // Delegate turn processing to Brain.
     private void playMove() {
         if (!gameStarted) {
             System.out.println("Game has not started yet. Waiting for start signal.");
             return;
         }
-        Move bestMove = brain.getBestMove(currentGameState, aiColor);
-        if (bestMove == null) {
-            System.err.println("LeBronAI failed to generate a valid move. Timeout Count = 1 !!!");
-            if (!hasValidMoves(currentGameState, aiColor)) {
-                System.err.println("No valid moves available. LeBronAI has lost.");
-            }
-            return;
-        }
-        bestMove.applyMoveForAI(currentGameState, aiColor);
-        String colorName = (aiColor == 1) ? "Black" : "White";
-        System.out.println("LeBronAI (" + colorName + ") moved: Queen " + bestMove.getQueenStart() + " -> " + bestMove.getQueenEnd() + ", Arrow at " + bestMove.getArrow());
-        if (gamegui != null) {
+        Move bestMove = brain.processTurn(currentGameState, aiColor);
+        if (bestMove != null && gamegui != null) {
             gamegui.updateGameState(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
             gamegui.repaint();
         }
         printBoard(currentGameState);
-        sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
-    }
-
-    // Check whether there are any valid moves left for the AI.
-    private boolean hasValidMoves(ArrayList<Integer> gameState, int playerColor) {
-        for (int i = 1; i <= 10; i++) {
-            for (int j = 1; j <= 10; j++) {
-                int index = i * 11 + j;
-                if (gameState.get(index) == playerColor && canMovePiece(gameState, i, j)) {
-                    return true;
-                }
-            }
+        // Only send move message if bestMove is non-null.
+        if (bestMove != null) {
+            sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
         }
-        return false;
-    }
-
-    // Check if a queen at (x,y) has at least one legal move.
-    private boolean canMovePiece(ArrayList<Integer> gameState, int x, int y) {
-        int[] directions = {-1, 0, 1};
-        for (int dx : directions) {
-            for (int dy : directions) {
-                if (dx == 0 && dy == 0) continue;
-                int newX = x + dx;
-                int newY = y + dy;
-                if (isInsideBoard(newX, newY) && gameState.get(newX * 11 + newY) == 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean isInsideBoard(int x, int y) {
-        return x >= 1 && x <= 10 && y >= 1 && y <= 10;
     }
 
     private void printBoard(ArrayList<Integer> gameState) {
@@ -197,6 +156,11 @@ public class COSC322Test extends GamePlayer {
     }
 
     public void sendMoveMessage(ArrayList<Integer> queenStart, ArrayList<Integer> queenEnd, ArrayList<Integer> arrow) {
+        // Check if any of the arrays are null. If so, do not send the message.
+        if (queenStart == null || queenEnd == null || arrow == null) {
+            System.err.println("Cannot send move message: one or more move parameters are null.");
+            return;
+        }
         if (gameClient != null) {
             gameClient.sendMoveMessage(queenStart, queenEnd, arrow);
             System.out.println("Move sent: Queen from " + queenStart + " to " + queenEnd + ", Arrow at " + arrow);
