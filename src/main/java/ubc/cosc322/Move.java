@@ -13,7 +13,6 @@ public class Move {
         this.arrow = arrow;
     }
 
-    // For simulations (no output)
     public void simulateMove(ArrayList<Integer> gameState, int pieceValue) {
         int startX = queenStart.get(0), startY = queenStart.get(1);
         int endX = queenEnd.get(0), endY = queenEnd.get(1);
@@ -23,7 +22,6 @@ public class Move {
         gameState.set(arrowX * 11 + arrowY, 3);
     }
 
-    // Apply the real move for the AI using its assigned color.
     public void applyMoveForAI(ArrayList<Integer> gameState, int aiColor) {
         int startX = queenStart.get(0), startY = queenStart.get(1);
         int endX = queenEnd.get(0), endY = queenEnd.get(1);
