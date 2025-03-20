@@ -1,7 +1,6 @@
 package ubc.cosc322;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import sfs2x.client.entities.Room;
@@ -12,17 +11,21 @@ import ygraph.ai.smartfox.games.GamePlayer;
 import ygraph.ai.smartfox.games.amazons.AmazonsGameMessage;
 
 public class COSC322Test extends GamePlayer {
+
     private GameClient gameClient = null;
     private BaseGameGUI gamegui = null;
     private String userName = null;
     private String passwd = null;
     private ArrayList<Integer> currentGameState = null;
     public Brain brain = new Brain();
-    private int aiColor; // 1 for black, 2 for white.
+
+    // aiColor: 1 for black, 2 for white.
+    private int aiColor;
     private boolean gameStarted = false;
 
     public static void main(String[] args) {
-        COSC322Test player = new COSC322Test("LeBronAI", "cosc322", 1);
+        // Set the third parameter to 1 for black or 2 for white.
+        COSC322Test player = new COSC322Test("babar", "cosc322", 1);
         if (player.getGameGUI() == null) {
             player.Go();
         } else {
@@ -58,20 +61,26 @@ public class COSC322Test extends GamePlayer {
     public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
         System.out.println("Received message: " + messageType);
         System.out.println("Message Details: " + msgDetails);
+
         switch (messageType) {
             case GameMessage.GAME_ACTION_START:
                 System.out.println("Game started.");
                 gameStarted = true;
-                if (aiColor == 2) { // White makes the first move.
+                // If playing as white, make the first move.
+                if (aiColor == 2) {
                     playMove();
                 }
                 break;
             case GameMessage.GAME_STATE_BOARD:
                 updateGameState(msgDetails);
+                // For black, move after the opponent; for white, a move may have already been made.
+                if (gameStarted && aiColor == 1) {
+                    playMove();
+                }
                 break;
             case GameMessage.GAME_ACTION_MOVE:
                 processOpponentMove(msgDetails);
-                if (gameStarted && aiColor == 1) { // Black moves after opponent.
+                if (gameStarted) {
                     playMove();
                 }
                 break;
@@ -91,10 +100,12 @@ public class COSC322Test extends GamePlayer {
         System.out.println("Updated game state successfully.");
     }
 
+    // Process opponent move using the opponent's color (opposite of aiColor).
     private void processOpponentMove(Map<String, Object> msgDetails) {
         ArrayList<Integer> queenPosCurr = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
         ArrayList<Integer> queenPosNext = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
         ArrayList<Integer> arrowPos = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
+
         int opponentColor = (aiColor == 1) ? 2 : 1;
         int startX = queenPosCurr.get(0);
         int startY = queenPosCurr.get(1);
@@ -102,9 +113,11 @@ public class COSC322Test extends GamePlayer {
         int endY = queenPosNext.get(1);
         int arrowX = arrowPos.get(0);
         int arrowY = arrowPos.get(1);
+
         currentGameState.set(startX * 11 + startY, 0);
         currentGameState.set(endX * 11 + endY, opponentColor);
         currentGameState.set(arrowX * 11 + arrowY, 3);
+
         System.out.println("Opponent moved: Queen " + queenPosCurr + " -> " + queenPosNext + ", Arrow at " + arrowPos);
         if (gamegui != null) {
             gamegui.updateGameState(queenPosCurr, queenPosNext, arrowPos);
@@ -113,6 +126,7 @@ public class COSC322Test extends GamePlayer {
         printBoard(currentGameState);
     }
 
+    // Delegate turn processing to Brain and then print game status.
     private void playMove() {
         if (!gameStarted) {
             System.out.println("Game has not started yet. Waiting for start signal.");
@@ -127,22 +141,10 @@ public class COSC322Test extends GamePlayer {
         if (bestMove != null) {
             sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
         }
+        // Print game status only if non-empty.
         String status = brain.getGameStatus(currentGameState, aiColor);
         if (!status.isEmpty()) {
             System.out.println(status);
-            if (status.contains("lost")) {
-                declareLoss();
-            }
-        }
-    }
-
-    private void declareLoss() {
-        Map<String, Object> lossDetails = new HashMap<>();
-        lossDetails.put(GameMessage.GAME_STATE_PLAYER_LOST, "true");
-        System.out.println(GameMessage.GAME_STATE_PLAYER_LOST + " = " + lossDetails.get(GameMessage.GAME_STATE_PLAYER_LOST));
-        if (gameClient != null) {
-            gameClient.sendMoveMessage(lossDetails);
-            System.out.println("Loss message sent to server using GAME_STATE_PLAYER_LOST.");
         }
     }
 
