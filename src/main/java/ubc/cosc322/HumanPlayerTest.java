@@ -56,8 +56,6 @@ public class HumanPlayerTest extends GamePlayer {
         this.userName = userName;
         this.passwd = passwd;
 
-        //To make a GUI-based player, create an instance of BaseGameGUI
-        //and implement the method getGameGUI() accordingly
         this.gamegui = new BaseGameGUI(this);
     }
 
@@ -71,11 +69,7 @@ public class HumanPlayerTest extends GamePlayer {
 
     @Override
     public boolean handleGameMessage(String messageType, Map<String, Object> msgDetails) {
-        //This method will be called by the GameClient when it receives a game-related message
-        //from the server.
 
-        //For a detailed description of the message types and format,
-        //see the method GamePlayer.handleGameMessage() in the game-client-api document.
         switch (messageType) {
             case GameMessage.GAME_STATE_BOARD:
                 Object check = msgDetails.get(AmazonsGameMessage.GAME_STATE);
@@ -86,22 +80,20 @@ public class HumanPlayerTest extends GamePlayer {
                 break;
 
             case GameMessage.GAME_ACTION_START:
-                //handleGameMessage(GameMessage.GAME_STATE_BOARD, msgDetails); // Just use the last case
-                // TODO: Store player names as necessary
-                String playerNameBlack = (String) msgDetails.get(AmazonsGameMessage.PLAYER_BLACK); // black is always the human player (or other AI)
-                String playerNameWhite = (String) msgDetails.get(AmazonsGameMessage.PLAYER_WHITE); // we are white
 
-                //Change playerIsBlack variable here
+                String playerNameBlack = (String) msgDetails.get(AmazonsGameMessage.PLAYER_BLACK);
+                String playerNameWhite = (String) msgDetails.get(AmazonsGameMessage.PLAYER_WHITE);
+
+
                 System.out.println("Player names: ");
                 System.out.printf("Black: %s \n", playerNameBlack);
                 System.out.printf("White: %s \n", playerNameWhite);
-                // the server automatically handles which player's turn it is, so we don't need to update the playerIsBlack variable
+
                 break;
 
             case GameMessage.GAME_ACTION_MOVE:
-                // Update game state
 
-                // Storing queen and arrow positions of previous move
+
                 ArrayList<Integer> currentPosition = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_CURR);
                 ArrayList<Integer> nextPosition = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.QUEEN_POS_NEXT);
                 ArrayList<Integer> arrowPosition = (ArrayList<Integer>) msgDetails.get(AmazonsGameMessage.ARROW_POS);
@@ -109,7 +101,6 @@ public class HumanPlayerTest extends GamePlayer {
                 gamegui.updateGameState(msgDetails);
                 gamegui.updateGameState(currentPosition,nextPosition,arrowPosition);
                 gameClient.sendMoveMessage(currentPosition,nextPosition,arrowPosition);
-                // After updated game state calculate your move and send your move to the server using the method GameClient.sendMoveMessage(...)
                 break;
 
             default:
