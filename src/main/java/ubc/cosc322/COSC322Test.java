@@ -126,7 +126,7 @@ public class COSC322Test extends GamePlayer {
         printBoard(currentGameState);
     }
 
-    // Delegate turn processing to Brain and print game status.
+    // Delegate turn processing to Brain and then print game status.
     private void playMove() {
         if (!gameStarted) {
             System.out.println("Game has not started yet. Waiting for start signal.");
@@ -141,8 +141,11 @@ public class COSC322Test extends GamePlayer {
         if (bestMove != null) {
             sendMoveMessage(bestMove.getQueenStart(), bestMove.getQueenEnd(), bestMove.getArrow());
         }
-        // After the move, print the overall game status.
-        System.out.println(brain.getGameStatus(currentGameState, aiColor));
+        // Print game status only if non-empty.
+        String status = brain.getGameStatus(currentGameState, aiColor);
+        if (!status.isEmpty()) {
+            System.out.println(status);
+        }
     }
 
     private void printBoard(ArrayList<Integer> gameState) {
