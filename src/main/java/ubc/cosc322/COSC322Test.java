@@ -10,6 +10,7 @@ import ygraph.ai.smartfox.games.GameMessage;
 import ygraph.ai.smartfox.games.GamePlayer;
 import ygraph.ai.smartfox.games.amazons.AmazonsGameMessage;
 
+
 public class COSC322Test extends GamePlayer {
 
     private GameClient gameClient = null;
